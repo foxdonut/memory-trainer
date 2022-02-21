@@ -1,8 +1,8 @@
-import Stream from 'mithril/stream';
-import { dashboardSvc, ModelUpdateFunction } from '..';
+import { MeiosisContext, Update } from 'meiosis-setup/mergerino';
+import { IAppModel } from '../meiosis';
+import { dashboardSvc } from '..';
 import { Dashboards } from '../../models';
 import { DataSet, emptyDataSet } from '../../models/data-set';
-import { IAppModel, UpdateStream } from '../meiosis';
 /** Application state */
 
 const dsModelKey = 'wordModel';
@@ -21,7 +21,7 @@ export interface IAppStateModel {
 
 export interface IAppStateActions {
   setPage: (page: Dashboards) => void;
-  update: (model: Partial<ModelUpdateFunction>) => void;
+  update: Update<IAppModel>;
   changePage: (
     page: Dashboards,
     params?: { [key: string]: string | number | undefined },
@@ -40,7 +40,7 @@ export interface IAppStateActions {
 
 export interface IAppState {
   initial: IAppStateModel;
-  actions: (us: UpdateStream, states: Stream<IAppModel>) => IAppStateActions;
+  actions: (context: MeiosisContext<IAppModel>) => IAppStateActions;
 }
 
 // console.log(`API server: ${process.env.SERVER}`);
@@ -63,36 +63,36 @@ export const appStateMgmt = {
       reverseDirection: false,
     },
   },
-  actions: (update, states) => {
+  actions: context => {
     return {
-      setPage: (page: Dashboards) => update({ app: { page } }),
-      update: (model: Partial<ModelUpdateFunction>) => update(model),
+      setPage: (page: Dashboards) => context.update({ app: { page } }),
+      update: context.update,
       changePage: (page, params, query) => {
         dashboardSvc && dashboardSvc.switchTo(page, params, query);
-        update({ app: { page } });
+        context.update({ app: { page } });
       },
       createRoute: (page, params) => dashboardSvc && dashboardSvc.route(page, params),
       saveModel: (dsModel) => {
         localStorage.setItem(dsModelKey, JSON.stringify(dsModel));
-        update({ app: { dsModel: () => dsModel } });
+        context.update({ app: { dsModel: () => dsModel } });
       },
       updateScore: (idx: number, isCorrect: boolean) => {
-        const state = states();
+        const state = context.getState();
         if (isCorrect) {
           const { correctIdxs } = state.app;
           correctIdxs.add(idx);
-          update({ app: { correctIdxs } });
+          context.update({ app: { correctIdxs } });
         } else {
           const { wrongIdxs } = state.app;
           wrongIdxs.add(idx);
-          update({ app: { wrongIdxs } });
+          context.update({ app: { wrongIdxs } });
         }
       },
       resetScore: () => {
-        update({ app: { correctIdxs: () => new Set(), wrongIdxs: () => new Set() } });
+        context.update({ app: { correctIdxs: () => new Set(), wrongIdxs: () => new Set() } });
       },
       setDirection: (direction: boolean) => {
-        update({ app: { reverseDirection: direction } });
+        context.update({ app: { reverseDirection: direction } });
       },
     };
   },

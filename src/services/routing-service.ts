@@ -1,6 +1,6 @@
 import m, { RouteDefs } from 'mithril';
 import { Dashboards, IDashboard } from '../models';
-import { actions, states } from './meiosis';
+import { getCell } from './meiosis';
 import { Layout } from '../components/layout';
 import { AboutPage, HomePage, AllWordsPage, LearningPage, PrepareDataPage } from '../components';
 
@@ -54,7 +54,7 @@ class RoutingService {
       p[c.route] =
         c.hasNavBar === false
           ? {
-              render: () => m(c.component, { state: states(), actions }),
+              render: () => m(c.component, getCell()),
             }
           : {
               // onmatch:
@@ -66,11 +66,8 @@ class RoutingService {
               render: () =>
                 m(
                   Layout,
-                  { state: states(), actions, options: {} },
-                  m(c.component, {
-                    state: states(),
-                    actions,
-                  })
+                  { ...getCell(), options: {} },
+                  m(c.component, getCell())
                 ),
             };
       return p;
