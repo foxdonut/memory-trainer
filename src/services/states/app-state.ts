@@ -1,4 +1,4 @@
-import { MeiosisContext, Update } from 'meiosis-setup/mergerino';
+import { Update } from 'meiosis-setup/mergerino';
 import { IAppModel } from '../meiosis';
 import { dashboardSvc } from '..';
 import { Dashboards } from '../../models';
@@ -40,7 +40,6 @@ export interface IAppStateActions {
 
 export interface IAppState {
   initial: IAppStateModel;
-  actions: (context: MeiosisContext<IAppModel>) => IAppStateActions;
 }
 
 // console.log(`API server: ${process.env.SERVER}`);
@@ -62,38 +61,42 @@ export const appStateMgmt = {
       wrongIdxs: new Set(),
       reverseDirection: false,
     },
+  }
+};
+
+interface AppContext {
+  getState: () => IAppModel;
+  update: Update<IAppModel>;
+}
+
+export const createActions = ({ getState, update }: AppContext): IAppStateActions => ({
+  setPage: (page: Dashboards) => update({ app: { page } }),
+  update: update,
+  changePage: (page, params, query) => {
+    dashboardSvc && dashboardSvc.switchTo(page, params, query);
+    update({ app: { page } });
   },
-  actions: context => {
-    return {
-      setPage: (page: Dashboards) => context.update({ app: { page } }),
-      update: context.update,
-      changePage: (page, params, query) => {
-        dashboardSvc && dashboardSvc.switchTo(page, params, query);
-        context.update({ app: { page } });
-      },
-      createRoute: (page, params) => dashboardSvc && dashboardSvc.route(page, params),
-      saveModel: (dsModel) => {
-        localStorage.setItem(dsModelKey, JSON.stringify(dsModel));
-        context.update({ app: { dsModel: () => dsModel } });
-      },
-      updateScore: (idx: number, isCorrect: boolean) => {
-        const state = context.getState();
-        if (isCorrect) {
-          const { correctIdxs } = state.app;
-          correctIdxs.add(idx);
-          context.update({ app: { correctIdxs } });
-        } else {
-          const { wrongIdxs } = state.app;
-          wrongIdxs.add(idx);
-          context.update({ app: { wrongIdxs } });
-        }
-      },
-      resetScore: () => {
-        context.update({ app: { correctIdxs: () => new Set(), wrongIdxs: () => new Set() } });
-      },
-      setDirection: (direction: boolean) => {
-        context.update({ app: { reverseDirection: direction } });
-      },
-    };
+  createRoute: (page, params) => dashboardSvc && dashboardSvc.route(page, params),
+  saveModel: (dsModel) => {
+    localStorage.setItem(dsModelKey, JSON.stringify(dsModel));
+    update({ app: { dsModel: () => dsModel } });
   },
-} as IAppState;
+  updateScore: (idx: number, isCorrect: boolean) => {
+    const state = getState();
+    if (isCorrect) {
+      const { correctIdxs } = state.app;
+      correctIdxs.add(idx);
+      update({ app: { correctIdxs } });
+    } else {
+      const { wrongIdxs } = state.app;
+      wrongIdxs.add(idx);
+      update({ app: { wrongIdxs } });
+    }
+  },
+  resetScore: () => {
+    update({ app: { correctIdxs: () => new Set(), wrongIdxs: () => new Set() } });
+  },
+  setDirection: (direction: boolean) => {
+    update({ app: { reverseDirection: direction } });
+  },
+});

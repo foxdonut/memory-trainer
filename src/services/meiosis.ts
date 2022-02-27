@@ -1,9 +1,6 @@
 import m, { FactoryComponent } from 'mithril';
-import Stream from 'mithril/stream';
-import { toStream } from 'meiosis-setup/common';
 import { App, Service, setup } from 'meiosis-setup/mergerino';
-import { merge } from '../utils/mergerino';
-import { appStateMgmt, IAppStateActions, IAppStateModel } from './states';
+import { appStateMgmt, createActions, IAppStateActions, IAppStateModel } from './states';
 
 export interface IAppModel extends IAppStateModel {}
 
@@ -15,10 +12,8 @@ export type MeiosisComponent<T extends { [key: string]: any } = {}> = FactoryCom
   options?: T;
 }>;
 
-const app: App<IAppModel, IActions> = {
+const app: App<IAppModel> = {
   initial: Object.assign({}, appStateMgmt.initial) as IAppModel,
-  Actions: context =>
-    Object.assign({}, appStateMgmt.actions(context)) as IActions,
   /** Services update the state */
   services: [
     // (s) => console.log(s.app.page),
@@ -29,7 +24,16 @@ const app: App<IAppModel, IActions> = {
   // ],
 };
 
-export const { states, getCell } = setup({ stream: toStream(Stream), merge, app });
+
+const { states, getCell } = setup({ app });
+
+const actions: IActions =
+  createActions({ getState: states, update: getCell().update });
+
+export const getMeiosisCell = () => ({
+  ...getCell(),
+  actions
+});
 
 states.map(() => {
   m.redraw();
