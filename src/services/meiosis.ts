@@ -1,4 +1,5 @@
 import m, { FactoryComponent } from 'mithril';
+import Stream from 'mithril/stream';
 import { App, Service, setup } from 'meiosis-setup/mergerino';
 import { appStateMgmt, createActions, IAppStateActions, IAppStateModel } from './states';
 
@@ -25,7 +26,7 @@ const app: App<IAppModel> = {
 };
 
 
-const { states, getCell } = setup({ app });
+const { states, getCell } = setup({ stream: Stream, app });
 
 const actions: IActions =
   createActions({ getState: states, update: getCell().update });
